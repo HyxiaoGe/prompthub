@@ -96,3 +96,14 @@ class PromptSummaryResponse(BaseModel):
     current_version: str
     created_at: datetime
     updated_at: datetime
+
+
+class RenderRequest(BaseModel):
+    variables: dict[str, Any] = {}
+
+
+class RenderResponse(BaseModel):
+    prompt_id: uuid.UUID
+    version: str
+    rendered_content: str
+    variables_used: dict[str, Any]

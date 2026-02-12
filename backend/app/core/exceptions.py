@@ -37,3 +37,8 @@ class PermissionError(AppError):
 class CircularDependencyError(AppError):
     def __init__(self, message: str = "Circular dependency detected", detail: str | None = None) -> None:
         super().__init__(code=40901, message=message, detail=detail, status_code=409)
+
+
+class TemplateRenderError(AppError):
+    def __init__(self, message: str = "Template rendering failed", detail: str | None = None) -> None:
+        super().__init__(code=42201, message=message, detail=detail, status_code=422)

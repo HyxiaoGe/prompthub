@@ -8,8 +8,15 @@ from app.core.pagination import PaginationParams, get_pagination
 from app.core.response import pagination_meta, success_response
 from app.database import get_db
 from app.models.user import User
-from app.schemas.prompt import PromptCreate, PromptResponse, PromptSummaryResponse, PromptUpdate
-from app.services import prompt_service
+from app.schemas.prompt import (
+    PromptCreate,
+    PromptResponse,
+    PromptSummaryResponse,
+    PromptUpdate,
+    RenderRequest,
+    RenderResponse,
+)
+from app.services import prompt_service, template_engine
 
 router = APIRouter()
 
@@ -81,3 +88,35 @@ async def delete_prompt(
 ) -> dict:
     await prompt_service.delete_prompt(db, prompt_id)
     return success_response()
+
+
+@router.post("/{prompt_id}/render")
+async def render_prompt(
+    prompt_id: uuid.UUID,
+    data: RenderRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    prompt = await prompt_service.get_prompt(db, prompt_id)
+    var_defs = prompt.variables or []
+    rendered = template_engine.render_prompt(prompt.content, var_defs, data.variables)
+    response = RenderResponse(
+        prompt_id=prompt.id,
+        version=prompt.current_version,
+        rendered_content=rendered,
+        variables_used=data.variables,
+    )
+    return success_response(data=response.model_dump(mode="json"))
+
+
+@router.post("/{prompt_id}/share")
+async def share_prompt(
+    prompt_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    prompt = await prompt_service.get_prompt(db, prompt_id)
+    prompt.is_shared = True
+    await db.flush()
+    await db.refresh(prompt)
+    return success_response(data=PromptResponse.model_validate(prompt).model_dump(mode="json"))

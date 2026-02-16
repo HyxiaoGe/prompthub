@@ -10,11 +10,15 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U prompthub"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - shared
+      - default
 
   redis:
     image: redis:7-alpine
@@ -28,7 +32,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - shared
+      - default
 
 volumes:
   postgres_data:
   redis_data:
+
+networks:
+  shared:
+    name: shared-infra

@@ -1,4 +1,4 @@
-.PHONY: help up down backend frontend test lint seed migrate
+.PHONY: help init up down backend frontend test lint seed migrate sdk-test sdk-lint
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -11,26 +11,41 @@ up: ## Start PostgreSQL + Redis
 down: ## Stop all services
 	docker-compose down
 
+wait-db: ## Wait for PostgreSQL to be ready
+	@echo "Waiting for PostgreSQL..."
+	@until docker exec prompthub-postgres pg_isready -U prompthub > /dev/null 2>&1; do \
+		sleep 1; \
+	done
+	@echo "PostgreSQL is ready."
+
+init: ## First-time setup: Docker → wait DB → migrate → seed
+	docker-compose up -d
+	@$(MAKE) wait-db
+	cd backend && uv sync
+	cd backend && uv run alembic upgrade head
+	cd backend && uv run python -m scripts.seed_data
+	@echo "Done! Run 'make backend' to start the server."
+
 reset-db: ## Reset database (destroy + recreate)
 	docker-compose down -v
 	docker-compose up -d postgres
-	sleep 3
-	cd backend && alembic upgrade head
-	cd backend && python scripts/seed_data.py
+	@$(MAKE) wait-db
+	cd backend && uv run alembic upgrade head
+	cd backend && uv run python -m scripts.seed_data
 
 # === Backend ===
 
 backend: ## Start FastAPI backend (dev mode)
-	cd backend && uvicorn app.main:app --reload --port 8000
+	cd backend && uv run uvicorn app.main:app --reload --port 8000
 
 migrate: ## Run database migrations
-	cd backend && alembic upgrade head
+	cd backend && uv run alembic upgrade head
 
 migrate-new: ## Create new migration (usage: make migrate-new msg="add xxx table")
-	cd backend && alembic revision --autogenerate -m "$(msg)"
+	cd backend && uv run alembic revision --autogenerate -m "$(msg)"
 
 seed: ## Load seed data
-	cd backend && python scripts/seed_data.py
+	cd backend && uv run python -m scripts.seed_data
 
 # === Frontend ===
 
@@ -43,13 +58,24 @@ frontend-build: ## Build frontend for production
 # === Quality ===
 
 test: ## Run backend tests
-	cd backend && pytest -v
+	cd backend && uv run pytest -v
 
 lint: ## Lint backend code
-	cd backend && ruff check . && ruff format --check .
+	cd backend && uv run ruff check . && uv run ruff format --check .
 
 format: ## Format backend code
-	cd backend && ruff format .
+	cd backend && uv run ruff format .
+
+# === SDK ===
+
+sdk-test: ## Run SDK tests
+	cd sdk && uv run pytest -v
+
+sdk-lint: ## Lint SDK code
+	cd sdk && uv run ruff check . && uv run ruff format --check .
+
+sdk-format: ## Format SDK code
+	cd sdk && uv run ruff format .
 
 # === All-in-one ===
 

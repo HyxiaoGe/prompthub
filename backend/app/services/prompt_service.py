@@ -94,6 +94,7 @@ async def list_prompts(
     pagination: PaginationParams,
     *,
     project_id: uuid.UUID | None = None,
+    slug: str | None = None,
     tags: list[str] | None = None,
     category: str | None = None,
     is_shared: bool | None = None,
@@ -109,6 +110,8 @@ async def list_prompts(
 
     if project_id is not None:
         base = base.where(Prompt.project_id == project_id)
+    if slug is not None:
+        base = base.where(Prompt.slug == slug)
     if tags:
         # PostgreSQL array overlap operator (&&)
         base = base.where(Prompt.tags.op("&&")(cast(tags, ARRAY(String))))

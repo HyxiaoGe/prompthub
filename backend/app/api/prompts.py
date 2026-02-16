@@ -35,6 +35,7 @@ async def create_prompt(
 async def list_prompts(
     pagination: PaginationParams = Depends(get_pagination),
     project_id: uuid.UUID | None = Query(None, description="Filter by project"),
+    slug: str | None = Query(None, description="Filter by exact slug"),
     tags: str | None = Query(None, description="Comma-separated tags"),
     category: str | None = Query(None, description="Filter by category"),
     is_shared: bool | None = Query(None, description="Filter shared prompts"),
@@ -48,6 +49,7 @@ async def list_prompts(
         db,
         pagination,
         project_id=project_id,
+        slug=slug,
         tags=tags_list,
         category=category,
         is_shared=is_shared,

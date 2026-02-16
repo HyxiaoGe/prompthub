@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=("../.env", ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -27,6 +27,15 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000"
+
+    # LLM (Phase 5)
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str | None = None
+    LLM_DEFAULT_MODEL: str = "gpt-4o-mini"
+    LLM_MAX_TOKENS: int = 4096
+    LLM_TEMPERATURE: float = 0.7
+    LLM_TIMEOUT: int = 60
+    LLM_BATCH_CONCURRENCY: int = 3
 
     @property
     def cors_origins_list(self) -> list[str]:

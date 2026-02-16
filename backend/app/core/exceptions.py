@@ -42,3 +42,10 @@ class CircularDependencyError(AppError):
 class TemplateRenderError(AppError):
     def __init__(self, message: str = "Template rendering failed", detail: str | None = None) -> None:
         super().__init__(code=42201, message=message, detail=detail, status_code=422)
+
+
+class LLMError(AppError):
+    """LLM API call failed (50200)."""
+
+    def __init__(self, message: str = "LLM service unavailable", detail: str | None = None) -> None:
+        super().__init__(code=50200, message=message, detail=detail, status_code=502)

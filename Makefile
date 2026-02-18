@@ -1,15 +1,18 @@
-.PHONY: help init up down backend frontend test lint seed migrate sdk-test sdk-lint
+.PHONY: help init up down backend backend-local frontend test lint seed migrate sdk-test sdk-lint logs
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 # === Infrastructure ===
 
-up: ## Start PostgreSQL + Redis
+up: ## Start all services (PostgreSQL + Redis + Backend)
 	docker-compose up -d
 
 down: ## Stop all services
 	docker-compose down
+
+up-infra: ## Start only PostgreSQL + Redis (no backend)
+	docker-compose up -d postgres redis
 
 wait-db: ## Wait for PostgreSQL to be ready
 	@echo "Waiting for PostgreSQL..."
@@ -19,12 +22,13 @@ wait-db: ## Wait for PostgreSQL to be ready
 	@echo "PostgreSQL is ready."
 
 init: ## First-time setup: Docker → wait DB → migrate → seed
-	docker-compose up -d
+	docker-compose up -d postgres redis
 	@$(MAKE) wait-db
 	cd backend && uv sync
 	cd backend && uv run alembic upgrade head
 	cd backend && uv run python -m scripts.seed_data
-	@echo "Done! Run 'make backend' to start the server."
+	docker-compose up -d backend
+	@echo "Done! All services running. Visit http://localhost:8000/docs"
 
 reset-db: ## Reset database (destroy + recreate)
 	docker-compose down -v
@@ -35,8 +39,23 @@ reset-db: ## Reset database (destroy + recreate)
 
 # === Backend ===
 
-backend: ## Start FastAPI backend (dev mode)
+backend: ## Start backend in Docker (background, with hot-reload)
+	docker-compose up -d backend
+
+backend-local: ## Start backend locally (foreground, for debugging)
 	cd backend && uv run uvicorn app.main:app --reload --port 8000
+
+backend-rebuild: ## Rebuild backend image (after dependency changes)
+	docker-compose build backend
+	docker-compose up -d backend
+
+logs: ## Tail backend logs
+	docker-compose logs -f backend
+
+logs-all: ## Tail all service logs
+	docker-compose logs -f
+
+# === Database ===
 
 migrate: ## Run database migrations
 	cd backend && uv run alembic upgrade head
@@ -79,6 +98,4 @@ sdk-format: ## Format SDK code
 
 # === All-in-one ===
 
-dev: up ## Start everything for development
-	@echo "Starting backend and frontend..."
-	@make -j2 backend frontend
+dev: up frontend ## Start everything (Docker services + frontend)

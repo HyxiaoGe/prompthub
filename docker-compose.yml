@@ -36,6 +36,35 @@ services:
       - shared
       - default
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: prompthub-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot-reload in dev mode
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://prompthub:prompthub_dev@postgres:5432/prompthub
+      - DATABASE_URL_SYNC=postgresql://prompthub:prompthub_dev@postgres:5432/prompthub
+      - REDIS_URL=redis://redis:6379/0
+      - APP_ENV=development
+      - APP_DEBUG=true
+      - CORS_ORIGINS=http://localhost:3000
+    env_file:
+      - .env  # Load additional vars (API keys etc.) from .env if present
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - shared
+      - default
+
 volumes:
   postgres_data:
   redis_data:

@@ -4,6 +4,7 @@ from collections import defaultdict, deque
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.enums import RefType
 from app.core.exceptions import CircularDependencyError, NotFoundError
 from app.models.prompt import Prompt
 from app.models.prompt_ref import PromptRef
@@ -209,7 +210,7 @@ async def get_scene_dependency_graph(
                     source=scene_id,
                     target=step.prompt_ref.prompt_id,
                     step_id=step.id,
-                    ref_type="composes",
+                    ref_type=RefType.COMPOSES,
                 )
             )
 

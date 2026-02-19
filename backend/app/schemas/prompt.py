@@ -5,10 +5,12 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from app.core.enums import PromptFormat, TemplateEngine, VariableType
+
 
 class VariableDefinition(BaseModel):
     name: str
-    type: str = "string"
+    type: VariableType = VariableType.STRING
     required: bool = True
     default: Any = None
     description: str | None = None
@@ -20,8 +22,8 @@ class PromptCreate(BaseModel):
     slug: str
     description: str | None = None
     content: str
-    format: str = "text"
-    template_engine: str = "jinja2"
+    format: PromptFormat = PromptFormat.TEXT
+    template_engine: TemplateEngine = TemplateEngine.JINJA2
     variables: list[VariableDefinition] = []
     tags: list[str] = []
     category: str | None = None

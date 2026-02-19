@@ -3,6 +3,7 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.enums import RefType
 from app.core.exceptions import CircularDependencyError
 from app.models.project import Project
 from app.models.prompt import Prompt
@@ -86,7 +87,7 @@ async def test_check_no_cycles_detects_indirect_cycle(db_session: AsyncSession) 
         ref = PromptRef(
             source_prompt_id=src.id,
             target_prompt_id=tgt.id,
-            ref_type="includes",
+            ref_type=RefType.INCLUDES,
         )
         db_session.add(ref)
     await db_session.flush()

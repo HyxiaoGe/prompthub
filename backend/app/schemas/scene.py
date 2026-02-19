@@ -1,18 +1,11 @@
 import re
 import uuid
 from datetime import datetime
-from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-
-class ConditionOperator(str, Enum):
-    EQ = "eq"
-    NEQ = "neq"
-    IN = "in"
-    NOT_IN = "not_in"
-    EXISTS = "exists"
+from app.core.enums import ConditionOperator, MergeStrategy
 
 
 class StepCondition(BaseModel):
@@ -46,7 +39,7 @@ class PipelineConfig(BaseModel):
         return self
 
 
-VALID_MERGE_STRATEGIES = {"concat", "chain", "select_best"}
+VALID_MERGE_STRATEGIES = {e.value for e in MergeStrategy}
 
 
 class SceneCreate(BaseModel):

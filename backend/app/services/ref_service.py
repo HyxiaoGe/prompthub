@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.enums import RefType
 from app.core.exceptions import NotFoundError, PermissionError
 from app.models.prompt import Prompt
 from app.models.prompt_ref import PromptRef
@@ -131,7 +132,7 @@ async def fork_prompt(
         target_prompt_id=source.id,
         source_project_id=target_project_id,
         target_project_id=source.project_id,
-        ref_type="includes",
+        ref_type=RefType.INCLUDES,
     )
     db.add(ref)
     await db.flush()

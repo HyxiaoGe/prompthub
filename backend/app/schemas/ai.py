@@ -5,6 +5,13 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.core.enums import (
+    EnhanceAspect,
+    EvaluateCriterion,
+    LintSeverity,
+    VariantType,
+)
+
 # ---------------------------------------------------------------------------
 # Generate
 # ---------------------------------------------------------------------------
@@ -40,7 +47,7 @@ class GenerateResponse(BaseModel):
 
 class EnhanceRequest(BaseModel):
     content: str = Field(..., min_length=1)
-    aspects: list[str] = ["clarity", "specificity", "structure"]
+    aspects: list[EnhanceAspect] = [EnhanceAspect.CLARITY, EnhanceAspect.SPECIFICITY, EnhanceAspect.STRUCTURE]
     language: str = "zh"
 
 
@@ -58,7 +65,7 @@ class EnhanceResponse(BaseModel):
 
 class VariantRequest(BaseModel):
     content: str = Field(..., min_length=1)
-    variant_types: list[str] = ["concise", "detailed", "creative"]
+    variant_types: list[VariantType] = [VariantType.CONCISE, VariantType.DETAILED, VariantType.CREATIVE]
     count: int = Field(default=3, ge=1, le=5)
     language: str = "zh"
 
@@ -81,7 +88,12 @@ class VariantResponse(BaseModel):
 
 class EvaluateRequest(BaseModel):
     content: str = Field(..., min_length=1)
-    criteria: list[str] = ["clarity", "specificity", "completeness", "consistency"]
+    criteria: list[EvaluateCriterion] = [
+        EvaluateCriterion.CLARITY,
+        EvaluateCriterion.SPECIFICITY,
+        EvaluateCriterion.COMPLETENESS,
+        EvaluateCriterion.CONSISTENCY,
+    ]
 
 
 class EvaluateResponse(BaseModel):
@@ -101,7 +113,12 @@ class EvaluateItemResult(BaseModel):
 
 class EvaluateBatchRequest(BaseModel):
     prompt_ids: list[uuid.UUID] = Field(..., max_length=10)
-    criteria: list[str] = ["clarity", "specificity", "completeness", "consistency"]
+    criteria: list[EvaluateCriterion] = [
+        EvaluateCriterion.CLARITY,
+        EvaluateCriterion.SPECIFICITY,
+        EvaluateCriterion.COMPLETENESS,
+        EvaluateCriterion.CONSISTENCY,
+    ]
 
 
 class EvaluateBatchResponse(BaseModel):
@@ -120,7 +137,7 @@ class LintRequest(BaseModel):
 
 
 class LintIssue(BaseModel):
-    severity: str  # "error" | "warning" | "info"
+    severity: LintSeverity
     rule: str
     message: str
     suggestion: str | None = None

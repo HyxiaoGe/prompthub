@@ -4,6 +4,7 @@ from sqlalchemy import ARRAY, String, cast, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.enums import VersionStatus
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.pagination import PaginationParams
 from app.models.project import Project
@@ -67,7 +68,7 @@ async def create_prompt(
         content=data.content,
         variables=variables_data,
         changelog="Initial version",
-        status="published",
+        status=VersionStatus.PUBLISHED,
         created_by=created_by,
     )
     db.add(initial_version)

@@ -11,6 +11,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.core.enums import LintSeverity
 from app.core.exceptions import LLMError, ValidationError
 from app.models.call_log import CallLog
 from app.schemas.ai import (
@@ -354,7 +355,7 @@ def _lint_local(content: str, variables: list[dict] | None) -> list[LintIssue]:
     if len(content) > _MAX_CONTENT_LENGTH:
         issues.append(
             LintIssue(
-                severity="warning",
+                severity=LintSeverity.WARNING,
                 rule="too_long",
                 message=f"Prompt is {len(content)} characters, exceeding the {_MAX_CONTENT_LENGTH} character guideline",
                 suggestion="Consider breaking the prompt into smaller, composable parts",
@@ -370,7 +371,7 @@ def _lint_local(content: str, variables: list[dict] | None) -> list[LintIssue]:
         for var_name in defined_vars - used_vars:
             issues.append(
                 LintIssue(
-                    severity="warning",
+                    severity=LintSeverity.WARNING,
                     rule="unused_variable",
                     message=f"Variable '{var_name}' is defined but not used in the prompt content",
                     suggestion=f"Remove '{var_name}' from variables or reference it with {{{{ {var_name} }}}}",
@@ -381,7 +382,7 @@ def _lint_local(content: str, variables: list[dict] | None) -> list[LintIssue]:
         for var_name in used_vars - defined_vars:
             issues.append(
                 LintIssue(
-                    severity="error",
+                    severity=LintSeverity.ERROR,
                     rule="undefined_variable",
                     message=f"Variable '{var_name}' is used in the prompt but not defined in variables",
                     suggestion=f"Add '{var_name}' to the variables list",
@@ -415,9 +416,9 @@ async def lint_prompt(
     # Compute score: start at 100, deduct for issues
     score = 100.0
     for issue in issues:
-        if issue.severity == "error":
+        if issue.severity == LintSeverity.ERROR:
             score -= 20
-        elif issue.severity == "warning":
+        elif issue.severity == LintSeverity.WARNING:
             score -= 10
         else:
             score -= 5

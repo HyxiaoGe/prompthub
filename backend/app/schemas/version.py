@@ -1,15 +1,10 @@
 import uuid
 from datetime import datetime
-from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
-
-class BumpType(str, Enum):
-    PATCH = "patch"
-    MINOR = "minor"
-    MAJOR = "major"
+from app.core.enums import BumpType, VersionStatus
 
 
 class VersionPublishRequest(BaseModel):
@@ -28,6 +23,6 @@ class VersionResponse(BaseModel):
     content: str
     variables: Any
     changelog: str | None
-    status: str
+    status: VersionStatus
     created_by: uuid.UUID | None
     created_at: datetime

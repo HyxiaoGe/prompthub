@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import NotFoundError
 from app.models.prompt import Prompt
 from app.models.version import PromptVersion
-from app.schemas.version import BumpType, VersionPublishRequest
+from app.core.enums import BumpType, VersionStatus
+from app.schemas.version import VersionPublishRequest
 from app.services.prompt_service import get_prompt
 
 
@@ -45,7 +46,7 @@ async def publish_version(
         content=content,
         variables=variables,
         changelog=data.changelog,
-        status="published",
+        status=VersionStatus.PUBLISHED,
         created_by=created_by,
     )
     db.add(version)

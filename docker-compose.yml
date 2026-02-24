@@ -1,41 +1,4 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: prompthub-postgres
-    environment:
-      POSTGRES_USER: prompthub
-      POSTGRES_PASSWORD: prompthub_dev
-      POSTGRES_DB: prompthub
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init-db:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U prompthub"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - shared
-      - default
-
-  redis:
-    image: redis:7-alpine
-    container_name: prompthub-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - shared
-      - default
-
   backend:
     build:
       context: ./backend
@@ -47,28 +10,18 @@ services:
       # Mount source code for hot-reload in dev mode
       - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql+asyncpg://prompthub:prompthub_dev@postgres:5432/prompthub
-      - DATABASE_URL_SYNC=postgresql://prompthub:prompthub_dev@postgres:5432/prompthub
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql+asyncpg://prompthub:prompthub_dev@192.168.1.10:5432/prompthub
+      - DATABASE_URL_SYNC=postgresql://prompthub:prompthub_dev@192.168.1.10:5432/prompthub
+      - REDIS_URL=redis://192.168.1.10:6379/0
       - APP_ENV=development
       - APP_DEBUG=true
       - CORS_ORIGINS=http://localhost:3000
     env_file:
       - .env  # Load additional vars (API keys etc.) from .env if present
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     restart: unless-stopped
     networks:
-      - shared
-      - default
-
-volumes:
-  postgres_data:
-  redis_data:
+      - ai-audio-network
 
 networks:
-  shared:
-    name: shared-infra
+  ai-audio-network:
+    external: true

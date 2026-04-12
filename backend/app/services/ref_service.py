@@ -56,37 +56,31 @@ async def delete_ref(db: AsyncSession, ref_id: uuid.UUID) -> None:
 
 
 async def list_refs_for_prompt(
-    db: AsyncSession, prompt_id: uuid.UUID,
+    db: AsyncSession,
+    prompt_id: uuid.UUID,
 ) -> tuple[list[PromptRef], list[PromptRef]]:
     """Return (outgoing_refs, incoming_refs) for a prompt."""
     await get_prompt(db, prompt_id)  # ensure exists
 
-    outgoing_result = await db.execute(
-        select(PromptRef).where(PromptRef.source_prompt_id == prompt_id)
-    )
+    outgoing_result = await db.execute(select(PromptRef).where(PromptRef.source_prompt_id == prompt_id))
     outgoing = list(outgoing_result.scalars().all())
 
-    incoming_result = await db.execute(
-        select(PromptRef).where(PromptRef.target_prompt_id == prompt_id)
-    )
+    incoming_result = await db.execute(select(PromptRef).where(PromptRef.target_prompt_id == prompt_id))
     incoming = list(incoming_result.scalars().all())
 
     return outgoing, incoming
 
 
 async def get_impact_analysis(
-    db: AsyncSession, prompt_id: uuid.UUID,
+    db: AsyncSession,
+    prompt_id: uuid.UUID,
 ) -> list[Scene]:
     """Find all scenes whose pipeline references this prompt."""
     await get_prompt(db, prompt_id)
 
     # Query scenes where pipeline JSONB contains this prompt_id
     # Use JSONB cast + text matching since pipeline is nested
-    result = await db.execute(
-        select(Scene).where(
-            Scene.pipeline.cast(str).contains(str(prompt_id))
-        )
-    )
+    result = await db.execute(select(Scene).where(Scene.pipeline.cast(str).contains(str(prompt_id))))
     return list(result.scalars().all())
 
 

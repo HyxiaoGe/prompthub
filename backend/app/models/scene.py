@@ -19,9 +19,7 @@ if TYPE_CHECKING:
 
 class Scene(Base):
     __tablename__ = "scenes"
-    __table_args__ = (
-        UniqueConstraint("project_id", "slug", name="uq_scenes_project_slug"),
-    )
+    __table_args__ = (UniqueConstraint("project_id", "slug", name="uq_scenes_project_slug"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True,
@@ -35,9 +33,7 @@ class Scene(Base):
         nullable=False,
     )
     pipeline: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    merge_strategy: Mapped[str] = mapped_column(
-        String(20), server_default="concat"
-    )
+    merge_strategy: Mapped[str] = mapped_column(String(20), server_default="concat")
     separator: Mapped[str] = mapped_column(String(50), server_default="'\\n\\n'")
     output_format: Mapped[str | None] = mapped_column(String(50))
     created_by: Mapped[uuid.UUID | None] = mapped_column(

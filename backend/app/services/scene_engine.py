@@ -73,9 +73,7 @@ async def fetch_prompt_content(
     Fetch prompt content, respecting version lock and cross-project sharing.
     Returns (prompt, content, version_str).
     """
-    result = await db.execute(
-        select(Prompt).where(Prompt.id == prompt_id, Prompt.deleted_at.is_(None))
-    )
+    result = await db.execute(select(Prompt).where(Prompt.id == prompt_id, Prompt.deleted_at.is_(None)))
     prompt = result.scalar_one_or_none()
     if prompt is None:
         raise NotFoundError(

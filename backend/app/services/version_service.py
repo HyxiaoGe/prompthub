@@ -3,10 +3,9 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError
-from app.models.prompt import Prompt
-from app.models.version import PromptVersion
 from app.core.enums import BumpType, VersionStatus
+from app.core.exceptions import NotFoundError
+from app.models.version import PromptVersion
 from app.schemas.version import VersionPublishRequest
 from app.services.prompt_service import get_prompt
 
@@ -35,9 +34,7 @@ async def publish_version(
 
     content = data.content if data.content is not None else prompt.content
     variables = (
-        [v if isinstance(v, dict) else v for v in data.variables]
-        if data.variables is not None
-        else prompt.variables
+        [v if isinstance(v, dict) else v for v in data.variables] if data.variables is not None else prompt.variables
     )
 
     version = PromptVersion(
@@ -58,21 +55,22 @@ async def publish_version(
 
 
 async def list_versions(
-    db: AsyncSession, prompt_id: uuid.UUID,
+    db: AsyncSession,
+    prompt_id: uuid.UUID,
 ) -> list[PromptVersion]:
     # Verify prompt exists
     await get_prompt(db, prompt_id)
 
     result = await db.execute(
-        select(PromptVersion)
-        .where(PromptVersion.prompt_id == prompt_id)
-        .order_by(PromptVersion.created_at.desc())
+        select(PromptVersion).where(PromptVersion.prompt_id == prompt_id).order_by(PromptVersion.created_at.desc())
     )
     return list(result.scalars().all())
 
 
 async def get_version(
-    db: AsyncSession, prompt_id: uuid.UUID, version_str: str,
+    db: AsyncSession,
+    prompt_id: uuid.UUID,
+    version_str: str,
 ) -> PromptVersion:
     # Verify prompt exists
     await get_prompt(db, prompt_id)

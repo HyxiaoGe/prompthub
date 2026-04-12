@@ -82,10 +82,7 @@ async def build_prompt_ref_graph(
         return graph
 
     result = await db.execute(
-        select(PromptRef).where(
-            PromptRef.source_prompt_id.in_(prompt_ids)
-            | PromptRef.target_prompt_id.in_(prompt_ids)
-        )
+        select(PromptRef).where(PromptRef.source_prompt_id.in_(prompt_ids) | PromptRef.target_prompt_id.in_(prompt_ids))
     )
     refs = result.scalars().all()
 
@@ -112,9 +109,7 @@ async def build_scene_dependency_graph(
     prompt_ids = {step.prompt_ref.prompt_id for step in pipeline.steps}
 
     # Load all prompts
-    result = await db.execute(
-        select(Prompt).where(Prompt.id.in_(prompt_ids), Prompt.deleted_at.is_(None))
-    )
+    result = await db.execute(select(Prompt).where(Prompt.id.in_(prompt_ids), Prompt.deleted_at.is_(None)))
     prompts = {p.id: p for p in result.scalars().all()}
 
     # Build ref graph including transitive deps
@@ -136,10 +131,7 @@ async def build_full_ref_graph(
         batch = to_visit - visited
         visited.update(batch)
         result = await db.execute(
-            select(PromptRef).where(
-                PromptRef.source_prompt_id.in_(batch)
-                | PromptRef.target_prompt_id.in_(batch)
-            )
+            select(PromptRef).where(PromptRef.source_prompt_id.in_(batch) | PromptRef.target_prompt_id.in_(batch))
         )
         for ref in result.scalars().all():
             if ref.source_prompt_id not in graph:
@@ -184,9 +176,7 @@ async def get_scene_dependency_graph(
     prompt_ids = {step.prompt_ref.prompt_id for step in pipeline.steps}
 
     # Load prompts
-    prompt_result = await db.execute(
-        select(Prompt).where(Prompt.id.in_(prompt_ids), Prompt.deleted_at.is_(None))
-    )
+    prompt_result = await db.execute(select(Prompt).where(Prompt.id.in_(prompt_ids), Prompt.deleted_at.is_(None)))
     prompts = {p.id: p for p in prompt_result.scalars().all()}
 
     # Build nodes
@@ -216,10 +206,7 @@ async def get_scene_dependency_graph(
 
     # Add edges from prompt_refs
     ref_result = await db.execute(
-        select(PromptRef).where(
-            PromptRef.source_prompt_id.in_(prompt_ids)
-            | PromptRef.target_prompt_id.in_(prompt_ids)
-        )
+        select(PromptRef).where(PromptRef.source_prompt_id.in_(prompt_ids) | PromptRef.target_prompt_id.in_(prompt_ids))
     )
     for ref in ref_result.scalars().all():
         edges.append(

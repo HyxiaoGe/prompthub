@@ -23,7 +23,10 @@ async def list_shared_prompts(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     items, total = await prompt_service.list_prompts(
-        db, pagination, is_shared=True, search=search,
+        db,
+        pagination,
+        is_shared=True,
+        search=search,
     )
     return success_response(
         data=[PromptSummaryResponse.model_validate(p).model_dump(mode="json") for p in items],

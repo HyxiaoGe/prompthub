@@ -1,17 +1,19 @@
 import uuid
 
-import pytest
 from httpx import AsyncClient
 
 API = "/api/v1"
 
 
 async def test_create_project(client: AsyncClient) -> None:
-    resp = await client.post(f"{API}/projects", json={
-        "name": "Test Project",
-        "slug": "test-project",
-        "description": "A test project",
-    })
+    resp = await client.post(
+        f"{API}/projects",
+        json={
+            "name": "Test Project",
+            "slug": "test-project",
+            "description": "A test project",
+        },
+    )
     assert resp.status_code == 200
     body = resp.json()
     assert body["code"] == 0
@@ -22,31 +24,43 @@ async def test_create_project(client: AsyncClient) -> None:
 
 
 async def test_create_project_duplicate_slug(client: AsyncClient) -> None:
-    await client.post(f"{API}/projects", json={
-        "name": "Project A",
-        "slug": "dup-slug",
-    })
-    resp = await client.post(f"{API}/projects", json={
-        "name": "Project B",
-        "slug": "dup-slug",
-    })
+    await client.post(
+        f"{API}/projects",
+        json={
+            "name": "Project A",
+            "slug": "dup-slug",
+        },
+    )
+    resp = await client.post(
+        f"{API}/projects",
+        json={
+            "name": "Project B",
+            "slug": "dup-slug",
+        },
+    )
     assert resp.status_code == 409
     assert resp.json()["code"] == 40900
 
 
 async def test_create_project_invalid_slug(client: AsyncClient) -> None:
-    resp = await client.post(f"{API}/projects", json={
-        "name": "Bad Slug",
-        "slug": "Bad_Slug!",
-    })
+    resp = await client.post(
+        f"{API}/projects",
+        json={
+            "name": "Bad Slug",
+            "slug": "Bad_Slug!",
+        },
+    )
     assert resp.status_code == 422
 
 
 async def test_create_project_no_auth(unauthed_client: AsyncClient) -> None:
-    resp = await unauthed_client.post(f"{API}/projects", json={
-        "name": "No Auth",
-        "slug": "no-auth",
-    })
+    resp = await unauthed_client.post(
+        f"{API}/projects",
+        json={
+            "name": "No Auth",
+            "slug": "no-auth",
+        },
+    )
     assert resp.status_code == 401
 
 
@@ -85,10 +99,13 @@ async def test_list_projects_pagination(client: AsyncClient) -> None:
 
 
 async def test_get_project_detail(client: AsyncClient) -> None:
-    create_resp = await client.post(f"{API}/projects", json={
-        "name": "Detail Project",
-        "slug": "detail-proj",
-    })
+    create_resp = await client.post(
+        f"{API}/projects",
+        json={
+            "name": "Detail Project",
+            "slug": "detail-proj",
+        },
+    )
     project_id = create_resp.json()["data"]["id"]
 
     resp = await client.get(f"{API}/projects/{project_id}")
@@ -107,18 +124,24 @@ async def test_get_project_not_found(client: AsyncClient) -> None:
 
 
 async def test_list_project_prompts(client: AsyncClient) -> None:
-    proj_resp = await client.post(f"{API}/projects", json={
-        "name": "Prompt Project",
-        "slug": "prompt-proj",
-    })
+    proj_resp = await client.post(
+        f"{API}/projects",
+        json={
+            "name": "Prompt Project",
+            "slug": "prompt-proj",
+        },
+    )
     project_id = proj_resp.json()["data"]["id"]
 
-    await client.post(f"{API}/prompts", json={
-        "name": "Prompt A",
-        "slug": "prompt-a",
-        "content": "Hello",
-        "project_id": project_id,
-    })
+    await client.post(
+        f"{API}/prompts",
+        json={
+            "name": "Prompt A",
+            "slug": "prompt-a",
+            "content": "Hello",
+            "project_id": project_id,
+        },
+    )
 
     resp = await client.get(f"{API}/projects/{project_id}/prompts")
     assert resp.status_code == 200

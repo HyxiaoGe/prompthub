@@ -17,9 +17,7 @@ if TYPE_CHECKING:
 
 class PromptVersion(Base):
     __tablename__ = "prompt_versions"
-    __table_args__ = (
-        UniqueConstraint("prompt_id", "version", name="uq_prompt_versions_prompt_version"),
-    )
+    __table_args__ = (UniqueConstraint("prompt_id", "version", name="uq_prompt_versions_prompt_version"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True,

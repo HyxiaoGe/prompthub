@@ -276,7 +276,10 @@ async def evaluate_prompt(
     token_count = parsed["_usage"].get("prompt_tokens", 0) + parsed["_usage"].get("completion_tokens", 0)
     quality_score = parsed.get("overall_score", 0.0)
     await _log_call(
-        db, caller_system="ai_evaluate", token_count=token_count, quality_score=quality_score,
+        db,
+        caller_system="ai_evaluate",
+        token_count=token_count,
+        quality_score=quality_score,
     )
 
     return EvaluateResponse(

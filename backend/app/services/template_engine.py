@@ -62,15 +62,15 @@ def render_template(content: str, variables: dict[str, Any]) -> str:
     except TemplateSyntaxError as e:
         raise TemplateRenderError(
             detail=f"Template syntax error: {e.message}",
-        )
+        ) from e
     except UndefinedError as e:
         raise TemplateRenderError(
             detail=f"Undefined variable: {e.message}",
-        )
+        ) from e
     except SecurityError as e:
         raise TemplateRenderError(
             detail=f"Unsafe operation blocked: {e}",
-        )
+        ) from e
 
 
 def render_prompt(

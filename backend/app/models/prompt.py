@@ -47,18 +47,14 @@ class Prompt(Base):
     format: Mapped[str] = mapped_column(String(20), server_default="text")
     template_engine: Mapped[str] = mapped_column(String(20), server_default="jinja2")
     variables: Mapped[dict | None] = mapped_column(JSONB, server_default="[]")
-    tags: Mapped[list[str] | None] = mapped_column(
-        ARRAY(String), server_default="{}"
-    )
+    tags: Mapped[list[str] | None] = mapped_column(ARRAY(String), server_default="{}")
     category: Mapped[str | None] = mapped_column(String(100))
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
     )
     is_shared: Mapped[bool] = mapped_column(Boolean, server_default="false")
-    current_version: Mapped[str] = mapped_column(
-        String(20), server_default="1.0.0"
-    )
+    current_version: Mapped[str] = mapped_column(String(20), server_default="1.0.0")
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id"),
     )
@@ -72,7 +68,10 @@ class Prompt(Base):
         onupdate=func.now(),
     )
     deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, default=None, index=True,
+        DateTime(timezone=True),
+        nullable=True,
+        default=None,
+        index=True,
     )
 
     # relationships

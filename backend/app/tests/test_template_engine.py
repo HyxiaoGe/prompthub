@@ -66,7 +66,6 @@ class TestRenderTemplate:
         with pytest.raises(TemplateRenderError):
             render_template("{{ ''.__class__.__mro__[1].__subclasses__() }}", {})
 
-
     def test_enum_bool_true_matches_lowercase(self) -> None:
         defs = [{"name": "flag", "required": True, "enum_values": ["true", "false"]}]
         result = validate_variables(defs, {"flag": True})

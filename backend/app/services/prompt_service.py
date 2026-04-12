@@ -16,7 +16,9 @@ ALLOWED_SORT_FIELDS = {"created_at", "updated_at", "name", "slug", "current_vers
 
 
 async def create_prompt(
-    db: AsyncSession, data: PromptCreate, created_by: uuid.UUID | None = None,
+    db: AsyncSession,
+    data: PromptCreate,
+    created_by: uuid.UUID | None = None,
 ) -> Prompt:
     # Verify project exists
     project = await db.execute(select(Project).where(Project.id == data.project_id))
@@ -78,9 +80,7 @@ async def create_prompt(
 
 
 async def get_prompt(db: AsyncSession, prompt_id: uuid.UUID) -> Prompt:
-    result = await db.execute(
-        select(Prompt).where(Prompt.id == prompt_id, Prompt.deleted_at.is_(None))
-    )
+    result = await db.execute(select(Prompt).where(Prompt.id == prompt_id, Prompt.deleted_at.is_(None)))
     prompt = result.scalar_one_or_none()
     if prompt is None:
         raise NotFoundError(
@@ -122,9 +122,7 @@ async def list_prompts(
         base = base.where(Prompt.is_shared == is_shared)
     if search:
         search_pattern = f"%{search}%"
-        base = base.where(
-            Prompt.name.ilike(search_pattern) | Prompt.description.ilike(search_pattern)
-        )
+        base = base.where(Prompt.name.ilike(search_pattern) | Prompt.description.ilike(search_pattern))
 
     # Count
     count_stmt = select(func.count()).select_from(base.subquery())
@@ -141,7 +139,9 @@ async def list_prompts(
 
 
 async def update_prompt(
-    db: AsyncSession, prompt_id: uuid.UUID, data: PromptUpdate,
+    db: AsyncSession,
+    prompt_id: uuid.UUID,
+    data: PromptUpdate,
 ) -> Prompt:
     prompt = await get_prompt(db, prompt_id)
 
@@ -152,11 +152,11 @@ async def update_prompt(
 
     try:
         await db.flush()
-    except IntegrityError:
+    except IntegrityError as e:
         raise ConflictError(
             message="Prompt slug conflict",
             detail="Another prompt with this slug already exists in the project",
-        )
+        ) from e
 
     await db.refresh(prompt)
     return prompt

@@ -12,7 +12,6 @@ from app.schemas.project import (
     ProjectCreate,
     ProjectDetailResponse,
     ProjectResponse,
-    ProjectUpdate,
 )
 from app.schemas.prompt import PromptSummaryResponse
 from app.services import project_service
@@ -49,9 +48,7 @@ async def get_project(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    project, prompt_count, scene_count = await project_service.get_project_with_counts(
-        db, project_id
-    )
+    project, prompt_count, scene_count = await project_service.get_project_with_counts(db, project_id)
     detail = ProjectDetailResponse.model_validate(project)
     detail.prompt_count = prompt_count
     detail.scene_count = scene_count

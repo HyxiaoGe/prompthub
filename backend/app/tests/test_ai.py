@@ -66,30 +66,35 @@ async def _create_prompt(db: AsyncSession, project_id: uuid.UUID, user_id: uuid.
 class TestGenerate:
     @pytest.mark.asyncio
     async def test_generate_success(self, client: AsyncClient) -> None:
-        mock_resp = _mock_llm_response({
-            "candidates": [
-                {
-                    "content": "You are an audio summarizer...",
-                    "name": "Audio Summarizer",
-                    "slug": "audio-summarizer",
-                    "variables": [{"name": "audio_url", "type": "string", "required": True}],
-                    "rationale": "Clear system prompt for audio summarization",
-                },
-                {
-                    "content": "Summarize the following audio...",
-                    "name": "Audio Summary V2",
-                    "slug": "audio-summary-v2",
-                    "variables": [],
-                    "rationale": "Simpler variant",
-                },
-            ]
-        })
+        mock_resp = _mock_llm_response(
+            {
+                "candidates": [
+                    {
+                        "content": "You are an audio summarizer...",
+                        "name": "Audio Summarizer",
+                        "slug": "audio-summarizer",
+                        "variables": [{"name": "audio_url", "type": "string", "required": True}],
+                        "rationale": "Clear system prompt for audio summarization",
+                    },
+                    {
+                        "content": "Summarize the following audio...",
+                        "name": "Audio Summary V2",
+                        "slug": "audio-summary-v2",
+                        "variables": [],
+                        "rationale": "Simpler variant",
+                    },
+                ]
+            }
+        )
 
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
-            resp = await client.post(f"{API}/generate", json={
-                "description": "Generate an audio summarization prompt",
-                "count": 2,
-            })
+            resp = await client.post(
+                f"{API}/generate",
+                json={
+                    "description": "Generate an audio summarization prompt",
+                    "count": 2,
+                },
+            )
 
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -102,25 +107,30 @@ class TestGenerate:
     async def test_generate_auto_save(self, client: AsyncClient, db_session: AsyncSession, test_user) -> None:
         project = await _create_project(db_session, test_user.id)
 
-        mock_resp = _mock_llm_response({
-            "candidates": [
-                {
-                    "content": "Saved prompt content",
-                    "name": "Saved Prompt",
-                    "slug": f"saved-{uuid.uuid4().hex[:8]}",
-                    "variables": [],
-                    "rationale": "Auto-saved prompt",
-                },
-            ]
-        })
+        mock_resp = _mock_llm_response(
+            {
+                "candidates": [
+                    {
+                        "content": "Saved prompt content",
+                        "name": "Saved Prompt",
+                        "slug": f"saved-{uuid.uuid4().hex[:8]}",
+                        "variables": [],
+                        "rationale": "Auto-saved prompt",
+                    },
+                ]
+            }
+        )
 
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
-            resp = await client.post(f"{API}/generate", json={
-                "description": "Test auto save",
-                "count": 1,
-                "auto_save": True,
-                "project_id": str(project.id),
-            })
+            resp = await client.post(
+                f"{API}/generate",
+                json={
+                    "description": "Test auto save",
+                    "count": 1,
+                    "auto_save": True,
+                    "project_id": str(project.id),
+                },
+            )
 
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -129,18 +139,24 @@ class TestGenerate:
 
     @pytest.mark.asyncio
     async def test_generate_auto_save_no_project_id(self, client: AsyncClient) -> None:
-        resp = await client.post(f"{API}/generate", json={
-            "description": "Test auto save",
-            "auto_save": True,
-        })
+        resp = await client.post(
+            f"{API}/generate",
+            json={
+                "description": "Test auto save",
+                "auto_save": True,
+            },
+        )
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
     async def test_generate_count_validation(self, client: AsyncClient) -> None:
-        resp = await client.post(f"{API}/generate", json={
-            "description": "Test",
-            "count": 10,
-        })
+        resp = await client.post(
+            f"{API}/generate",
+            json={
+                "description": "Test",
+                "count": 10,
+            },
+        )
         assert resp.status_code == 422
 
 
@@ -152,16 +168,21 @@ class TestGenerate:
 class TestEnhance:
     @pytest.mark.asyncio
     async def test_enhance_success(self, client: AsyncClient) -> None:
-        mock_resp = _mock_llm_response({
-            "enhanced_content": "Improved: You are an expert assistant...",
-            "improvements": ["Added role specification", "Improved clarity"],
-        })
+        mock_resp = _mock_llm_response(
+            {
+                "enhanced_content": "Improved: You are an expert assistant...",
+                "improvements": ["Added role specification", "Improved clarity"],
+            }
+        )
 
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
-            resp = await client.post(f"{API}/enhance", json={
-                "content": "You are a helper.",
-                "aspects": ["clarity", "specificity"],
-            })
+            resp = await client.post(
+                f"{API}/enhance",
+                json={
+                    "content": "You are a helper.",
+                    "aspects": ["clarity", "specificity"],
+                },
+            )
 
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -183,20 +204,25 @@ class TestEnhance:
 class TestVariants:
     @pytest.mark.asyncio
     async def test_variants_success(self, client: AsyncClient) -> None:
-        mock_resp = _mock_llm_response({
-            "variants": [
-                {"variant_type": "concise", "content": "Be brief...", "description": "Shortened version"},
-                {"variant_type": "detailed", "content": "Be thorough...", "description": "Expanded version"},
-                {"variant_type": "creative", "content": "Be creative...", "description": "Creative version"},
-            ]
-        })
+        mock_resp = _mock_llm_response(
+            {
+                "variants": [
+                    {"variant_type": "concise", "content": "Be brief...", "description": "Shortened version"},
+                    {"variant_type": "detailed", "content": "Be thorough...", "description": "Expanded version"},
+                    {"variant_type": "creative", "content": "Be creative...", "description": "Creative version"},
+                ]
+            }
+        )
 
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
-            resp = await client.post(f"{API}/variants", json={
-                "content": "You are a helpful assistant.",
-                "variant_types": ["concise", "detailed", "creative"],
-                "count": 3,
-            })
+            resp = await client.post(
+                f"{API}/variants",
+                json={
+                    "content": "You are a helpful assistant.",
+                    "variant_types": ["concise", "detailed", "creative"],
+                    "count": 3,
+                },
+            )
 
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -205,18 +231,23 @@ class TestVariants:
 
     @pytest.mark.asyncio
     async def test_variants_custom_types(self, client: AsyncClient) -> None:
-        mock_resp = _mock_llm_response({
-            "variants": [
-                {"variant_type": "formal", "content": "Formal prompt...", "description": "Formal style"},
-            ]
-        })
+        mock_resp = _mock_llm_response(
+            {
+                "variants": [
+                    {"variant_type": "formal", "content": "Formal prompt...", "description": "Formal style"},
+                ]
+            }
+        )
 
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
-            resp = await client.post(f"{API}/variants", json={
-                "content": "You are a helper.",
-                "variant_types": ["formal"],
-                "count": 1,
-            })
+            resp = await client.post(
+                f"{API}/variants",
+                json={
+                    "content": "You are a helper.",
+                    "variant_types": ["formal"],
+                    "count": 1,
+                },
+            )
 
         assert resp.status_code == 200
         assert len(resp.json()["data"]["variants"]) == 1
@@ -230,16 +261,21 @@ class TestVariants:
 class TestEvaluate:
     @pytest.mark.asyncio
     async def test_evaluate_success(self, client: AsyncClient) -> None:
-        mock_resp = _mock_llm_response({
-            "overall_score": 3.8,
-            "criteria_scores": {"clarity": 4.0, "specificity": 3.5, "completeness": 4.0, "consistency": 3.5},
-            "suggestions": ["Add more context", "Be more specific about output format"],
-        })
+        mock_resp = _mock_llm_response(
+            {
+                "overall_score": 3.8,
+                "criteria_scores": {"clarity": 4.0, "specificity": 3.5, "completeness": 4.0, "consistency": 3.5},
+                "suggestions": ["Add more context", "Be more specific about output format"],
+            }
+        )
 
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
-            resp = await client.post(f"{API}/evaluate", json={
-                "content": "You are a helpful assistant.",
-            })
+            resp = await client.post(
+                f"{API}/evaluate",
+                json={
+                    "content": "You are a helpful assistant.",
+                },
+            )
 
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -249,22 +285,30 @@ class TestEvaluate:
 
     @pytest.mark.asyncio
     async def test_evaluate_batch_success(
-        self, client: AsyncClient, db_session: AsyncSession, test_user,
+        self,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_user,
     ) -> None:
         project = await _create_project(db_session, test_user.id)
         prompt1 = await _create_prompt(db_session, project.id, test_user.id)
         prompt2 = await _create_prompt(db_session, project.id, test_user.id)
 
-        mock_resp = _mock_llm_response({
-            "overall_score": 4.0,
-            "criteria_scores": {"clarity": 4.5, "specificity": 3.5},
-            "suggestions": ["Good prompt"],
-        })
+        mock_resp = _mock_llm_response(
+            {
+                "overall_score": 4.0,
+                "criteria_scores": {"clarity": 4.5, "specificity": 3.5},
+                "suggestions": ["Good prompt"],
+            }
+        )
 
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
-            resp = await client.post(f"{API}/evaluate/batch", json={
-                "prompt_ids": [str(prompt1.id), str(prompt2.id)],
-            })
+            resp = await client.post(
+                f"{API}/evaluate/batch",
+                json={
+                    "prompt_ids": [str(prompt1.id), str(prompt2.id)],
+                },
+            )
 
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -280,12 +324,18 @@ class TestEvaluate:
 
     @pytest.mark.asyncio
     async def test_evaluate_batch_not_found(
-        self, client: AsyncClient, db_session: AsyncSession, test_user,
+        self,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        test_user,
     ) -> None:
         fake_id = str(uuid.uuid4())
-        resp = await client.post(f"{API}/evaluate/batch", json={
-            "prompt_ids": [fake_id],
-        })
+        resp = await client.post(
+            f"{API}/evaluate/batch",
+            json={
+                "prompt_ids": [fake_id],
+            },
+        )
         assert resp.status_code == 404
 
 
@@ -313,13 +363,16 @@ class TestLint:
     async def test_lint_unused_variable(self, client: AsyncClient) -> None:
         mock_resp = _mock_llm_response({"issues": []})
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
-            resp = await client.post(f"{API}/lint", json={
-                "content": "Hello {{ name }}",
-                "variables": [
-                    {"name": "name", "type": "string"},
-                    {"name": "unused_var", "type": "string"},
-                ],
-            })
+            resp = await client.post(
+                f"{API}/lint",
+                json={
+                    "content": "Hello {{ name }}",
+                    "variables": [
+                        {"name": "name", "type": "string"},
+                        {"name": "unused_var", "type": "string"},
+                    ],
+                },
+            )
 
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -330,10 +383,13 @@ class TestLint:
     async def test_lint_undefined_variable(self, client: AsyncClient) -> None:
         mock_resp = _mock_llm_response({"issues": []})
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
-            resp = await client.post(f"{API}/lint", json={
-                "content": "Hello {{ name }} and {{ missing_var }}",
-                "variables": [{"name": "name", "type": "string"}],
-            })
+            resp = await client.post(
+                f"{API}/lint",
+                json={
+                    "content": "Hello {{ name }} and {{ missing_var }}",
+                    "variables": [{"name": "name", "type": "string"}],
+                },
+            )
 
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -342,27 +398,32 @@ class TestLint:
 
     @pytest.mark.asyncio
     async def test_lint_with_llm_issues(self, client: AsyncClient) -> None:
-        mock_resp = _mock_llm_response({
-            "issues": [
-                {
-                    "severity": "warning",
-                    "rule": "redundant",
-                    "message": "Redundant instruction found",
-                    "suggestion": "Remove duplicate instructions",
-                },
-                {
-                    "severity": "info",
-                    "rule": "vague",
-                    "message": "Prompt is too vague",
-                    "suggestion": "Add more specific instructions",
-                },
-            ]
-        })
+        mock_resp = _mock_llm_response(
+            {
+                "issues": [
+                    {
+                        "severity": "warning",
+                        "rule": "redundant",
+                        "message": "Redundant instruction found",
+                        "suggestion": "Remove duplicate instructions",
+                    },
+                    {
+                        "severity": "info",
+                        "rule": "vague",
+                        "message": "Prompt is too vague",
+                        "suggestion": "Add more specific instructions",
+                    },
+                ]
+            }
+        )
 
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
-            resp = await client.post(f"{API}/lint", json={
-                "content": "Do stuff. Do stuff again.",
-            })
+            resp = await client.post(
+                f"{API}/lint",
+                json={
+                    "content": "Do stuff. Do stuff again.",
+                },
+            )
 
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -392,9 +453,12 @@ class TestLint:
             new_callable=AsyncMock,
             side_effect=LLMError("LLM down"),
         ):
-            resp = await client.post(f"{API}/lint", json={
-                "content": "x" * 2500,
-            })
+            resp = await client.post(
+                f"{API}/lint",
+                json={
+                    "content": "x" * 2500,
+                },
+            )
 
         assert resp.status_code == 200
         data = resp.json()["data"]
@@ -447,20 +511,20 @@ class TestAuth:
 class TestCallLog:
     @pytest.mark.asyncio
     async def test_ai_call_logged(self, client: AsyncClient, db_session: AsyncSession) -> None:
-        mock_resp = _mock_llm_response({
-            "overall_score": 4.0,
-            "criteria_scores": {"clarity": 4.0},
-            "suggestions": [],
-        })
+        mock_resp = _mock_llm_response(
+            {
+                "overall_score": 4.0,
+                "criteria_scores": {"clarity": 4.0},
+                "suggestions": [],
+            }
+        )
 
         with patch("app.services.ai_service.llm_client.complete", new_callable=AsyncMock, return_value=mock_resp):
             resp = await client.post(f"{API}/evaluate", json={"content": "Test prompt."})
 
         assert resp.status_code == 200
 
-        result = await db_session.execute(
-            select(CallLog).where(CallLog.caller_system == "ai_evaluate")
-        )
+        result = await db_session.execute(select(CallLog).where(CallLog.caller_system == "ai_evaluate"))
         log = result.scalar_one_or_none()
         assert log is not None
         assert log.quality_score == 4.0

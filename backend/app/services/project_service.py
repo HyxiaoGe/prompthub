@@ -1,7 +1,6 @@
 import uuid
 
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
@@ -9,17 +8,17 @@ from app.core.pagination import PaginationParams
 from app.models.project import Project
 from app.models.prompt import Prompt
 from app.models.scene import Scene
-from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.schemas.project import ProjectCreate
 
 ALLOWED_SORT_FIELDS = {"created_at", "updated_at", "name", "slug"}
 
 
 async def create_project(
-    db: AsyncSession, data: ProjectCreate, created_by: uuid.UUID | None = None,
+    db: AsyncSession,
+    data: ProjectCreate,
+    created_by: uuid.UUID | None = None,
 ) -> Project:
-    existing = await db.execute(
-        select(Project).where(Project.slug == data.slug)
-    )
+    existing = await db.execute(select(Project).where(Project.slug == data.slug))
     if existing.scalar_one_or_none() is not None:
         raise ConflictError(
             message="Project slug already exists",
@@ -49,7 +48,8 @@ async def get_project(db: AsyncSession, project_id: uuid.UUID) -> Project:
 
 
 async def list_projects(
-    db: AsyncSession, pagination: PaginationParams,
+    db: AsyncSession,
+    pagination: PaginationParams,
 ) -> tuple[list[Project], int]:
     if pagination.sort_by not in ALLOWED_SORT_FIELDS:
         raise ValidationError(
@@ -73,29 +73,26 @@ async def list_projects(
 
 
 async def get_project_with_counts(
-    db: AsyncSession, project_id: uuid.UUID,
+    db: AsyncSession,
+    project_id: uuid.UUID,
 ) -> tuple[Project, int, int]:
     project = await get_project(db, project_id)
 
     prompt_count_stmt = (
-        select(func.count())
-        .select_from(Prompt)
-        .where(Prompt.project_id == project_id, Prompt.deleted_at.is_(None))
+        select(func.count()).select_from(Prompt).where(Prompt.project_id == project_id, Prompt.deleted_at.is_(None))
     )
     prompt_count = (await db.execute(prompt_count_stmt)).scalar_one()
 
-    scene_count_stmt = (
-        select(func.count())
-        .select_from(Scene)
-        .where(Scene.project_id == project_id)
-    )
+    scene_count_stmt = select(func.count()).select_from(Scene).where(Scene.project_id == project_id)
     scene_count = (await db.execute(scene_count_stmt)).scalar_one()
 
     return project, prompt_count, scene_count
 
 
 async def list_project_prompts(
-    db: AsyncSession, project_id: uuid.UUID, pagination: PaginationParams,
+    db: AsyncSession,
+    project_id: uuid.UUID,
+    pagination: PaginationParams,
 ) -> tuple[list[Prompt], int]:
     # Verify project exists
     await get_project(db, project_id)

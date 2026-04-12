@@ -24,9 +24,7 @@ async def _validate_pipeline_prompts(
     if not prompt_ids:
         return
 
-    result = await db.execute(
-        select(Prompt).where(Prompt.id.in_(prompt_ids), Prompt.deleted_at.is_(None))
-    )
+    result = await db.execute(select(Prompt).where(Prompt.id.in_(prompt_ids), Prompt.deleted_at.is_(None)))
     found_prompts = {p.id: p for p in result.scalars().all()}
 
     missing = prompt_ids - set(found_prompts.keys())

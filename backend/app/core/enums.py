@@ -5,15 +5,14 @@ When adding a new enum value, update this file and the i18n dictionary
 at ``docs/i18n-enums.md`` so the frontend stays in sync.
 """
 
-from enum import Enum
-
+from enum import StrEnum
 
 # ---------------------------------------------------------------------------
 # User
 # ---------------------------------------------------------------------------
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """User permission roles."""
 
     ADMIN = "admin"
@@ -26,7 +25,7 @@ class UserRole(str, Enum):
 # ---------------------------------------------------------------------------
 
 
-class PromptFormat(str, Enum):
+class PromptFormat(StrEnum):
     """Supported prompt content formats."""
 
     TEXT = "text"
@@ -35,7 +34,7 @@ class PromptFormat(str, Enum):
     CHAT = "chat"
 
 
-class TemplateEngine(str, Enum):
+class TemplateEngine(StrEnum):
     """Template rendering engines."""
 
     JINJA2 = "jinja2"
@@ -43,7 +42,7 @@ class TemplateEngine(str, Enum):
     NONE = "none"
 
 
-class PromptCategory(str, Enum):
+class PromptCategory(StrEnum):
     """Pre-defined prompt categories.
 
     If your project needs additional categories, add them here and
@@ -64,7 +63,7 @@ class PromptCategory(str, Enum):
     OTHER = "other"
 
 
-class VariableType(str, Enum):
+class VariableType(StrEnum):
     """Prompt variable types."""
 
     STRING = "string"
@@ -80,7 +79,7 @@ class VariableType(str, Enum):
 # ---------------------------------------------------------------------------
 
 
-class VersionStatus(str, Enum):
+class VersionStatus(StrEnum):
     """Prompt version lifecycle statuses."""
 
     DRAFT = "draft"
@@ -88,7 +87,7 @@ class VersionStatus(str, Enum):
     DEPRECATED = "deprecated"
 
 
-class BumpType(str, Enum):
+class BumpType(StrEnum):
     """Semantic version bump types."""
 
     PATCH = "patch"
@@ -101,7 +100,7 @@ class BumpType(str, Enum):
 # ---------------------------------------------------------------------------
 
 
-class MergeStrategy(str, Enum):
+class MergeStrategy(StrEnum):
     """Scene pipeline merge strategies."""
 
     CONCAT = "concat"
@@ -109,7 +108,7 @@ class MergeStrategy(str, Enum):
     SELECT_BEST = "select_best"
 
 
-class ConditionOperator(str, Enum):
+class ConditionOperator(StrEnum):
     """Pipeline step condition operators."""
 
     EQ = "eq"
@@ -124,7 +123,7 @@ class ConditionOperator(str, Enum):
 # ---------------------------------------------------------------------------
 
 
-class RefType(str, Enum):
+class RefType(StrEnum):
     """Prompt cross-reference relationship types."""
 
     EXTENDS = "extends"
@@ -137,7 +136,7 @@ class RefType(str, Enum):
 # ---------------------------------------------------------------------------
 
 
-class LintSeverity(str, Enum):
+class LintSeverity(StrEnum):
     """Lint issue severity levels."""
 
     ERROR = "error"
@@ -145,7 +144,7 @@ class LintSeverity(str, Enum):
     INFO = "info"
 
 
-class EnhanceAspect(str, Enum):
+class EnhanceAspect(StrEnum):
     """Pre-defined aspects for prompt enhancement."""
 
     CLARITY = "clarity"
@@ -155,7 +154,7 @@ class EnhanceAspect(str, Enum):
     TONE = "tone"
 
 
-class VariantType(str, Enum):
+class VariantType(StrEnum):
     """Pre-defined prompt variant styles."""
 
     CONCISE = "concise"
@@ -165,7 +164,7 @@ class VariantType(str, Enum):
     CASUAL = "casual"
 
 
-class EvaluateCriterion(str, Enum):
+class EvaluateCriterion(StrEnum):
     """Pre-defined prompt evaluation criteria."""
 
     CLARITY = "clarity"
@@ -180,7 +179,7 @@ class EvaluateCriterion(str, Enum):
 # ---------------------------------------------------------------------------
 
 
-class SortOrder(str, Enum):
+class SortOrder(StrEnum):
     """Sort direction for list queries."""
 
     ASC = "asc"

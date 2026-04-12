@@ -37,9 +37,7 @@ class PromptRef(Base):
         ForeignKey("projects.id"),
     )
     ref_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    override_config: Mapped[dict | None] = mapped_column(
-        JSONB, server_default="{}"
-    )
+    override_config: Mapped[dict | None] = mapped_column(JSONB, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()"),

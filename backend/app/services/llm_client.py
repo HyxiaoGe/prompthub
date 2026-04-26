@@ -1,15 +1,20 @@
-"""Thin wrapper around openai.AsyncOpenAI for unified LLM calls."""
+"""Thin wrapper around LiteLLM for unified LLM calls."""
 
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import dataclass, field
 
+import litellm
 import structlog
-from openai import APIError, AsyncOpenAI
 
 from app.config import settings
 from app.core.exceptions import LLMError
+
+litellm.suppress_debug_info = True
+litellm.drop_params = True
+logging.getLogger("LiteLLM").setLevel(logging.WARNING)
 
 logger = structlog.get_logger()
 
@@ -19,25 +24,6 @@ class LLMResponse:
     content: str
     model: str
     usage: dict[str, int] = field(default_factory=dict)
-
-
-_client: AsyncOpenAI | None = None
-
-
-def _get_client() -> AsyncOpenAI:
-    global _client
-    if _client is None:
-        kwargs: dict = {"api_key": settings.OPENAI_API_KEY, "timeout": settings.LLM_TIMEOUT}
-        if settings.OPENAI_BASE_URL:
-            kwargs["base_url"] = settings.OPENAI_BASE_URL
-        _client = AsyncOpenAI(**kwargs)
-    return _client
-
-
-def reset_client() -> None:
-    """Reset the cached client (useful for tests)."""
-    global _client
-    _client = None
 
 
 async def complete(
@@ -50,7 +36,6 @@ async def complete(
     response_format: dict | None = None,
 ) -> LLMResponse:
     """Call the LLM and return a structured response."""
-    client = _get_client()
     model = model or settings.LLM_DEFAULT_MODEL
     temperature = temperature if temperature is not None else settings.LLM_TEMPERATURE
     max_tokens = max_tokens or settings.LLM_MAX_TOKENS
@@ -65,31 +50,28 @@ async def complete(
         "messages": messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
+        "timeout": settings.LLM_TIMEOUT,
+        "api_key": settings.OPENAI_API_KEY,
     }
+    if settings.OPENAI_BASE_URL:
+        kwargs["api_base"] = settings.OPENAI_BASE_URL
     if response_format:
         kwargs["response_format"] = response_format
 
     start = time.monotonic()
     try:
-        resp = await client.chat.completions.create(**kwargs)
-    except APIError as exc:
-        elapsed_ms = int((time.monotonic() - start) * 1000)
-        logger.error("llm_call_failed", model=model, elapsed_ms=elapsed_ms, error=str(exc))
-        raise LLMError(
-            message="LLM service unavailable",
-            detail=f"{exc.__class__.__name__}: {exc.message}",
-        ) from exc
+        resp = await litellm.acompletion(**kwargs)
     except Exception as exc:
         elapsed_ms = int((time.monotonic() - start) * 1000)
         logger.error("llm_call_failed", model=model, elapsed_ms=elapsed_ms, error=str(exc))
         raise LLMError(
             message="LLM service unavailable",
-            detail=str(exc),
+            detail=f"{exc.__class__.__name__}: {exc}",
         ) from exc
 
     elapsed_ms = int((time.monotonic() - start) * 1000)
     content = resp.choices[0].message.content or ""
-    usage_info = {}
+    usage_info: dict[str, int] = {}
     if resp.usage:
         usage_info = {
             "prompt_tokens": resp.usage.prompt_tokens,

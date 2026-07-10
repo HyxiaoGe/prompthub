@@ -168,6 +168,8 @@ class TestPromptsSync:
         assert len(versions) == 1
         assert isinstance(versions[0], Version)
         assert versions[0].version == "1.0.0"
+        assert versions[0].format == "text"
+        assert versions[0].template_engine == "jinja2"
 
     def test_publish(
         self,
@@ -270,3 +272,5 @@ class TestPromptsAsync:
         )
         versions = await async_client.prompts.list_versions(PROMPT_ID)
         assert len(versions) == 1
+        assert versions[0].format == "text"
+        assert versions[0].template_engine == "jinja2"

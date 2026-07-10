@@ -7,7 +7,7 @@ from uuid import UUID
 
 from prompthub._base import AsyncTransport, SyncTransport
 from prompthub._pagination import PaginatedList
-from prompthub.types import Project, ProjectDetail, PromptSummary
+from prompthub.types import Project, ProjectDetail, PromptSummary, PublishedPromptBundle
 
 _PREFIX = "/api/v1/projects"
 
@@ -90,6 +90,13 @@ class ProjectsResource:
         data, _ = self._transport.request("GET", f"{_PREFIX}/{project_id}")
         return ProjectDetail(**data)
 
+    def get_published_bundle(self, project_slug: str) -> PublishedPromptBundle:
+        data, _ = self._transport.request(
+            "GET",
+            f"{_PREFIX}/by-slug/{project_slug}/prompts/published",
+        )
+        return PublishedPromptBundle(**data)
+
     def list_prompts(
         self,
         project_id: str | UUID,
@@ -153,6 +160,13 @@ class AsyncProjectsResource:
     async def get(self, project_id: str | UUID) -> ProjectDetail:
         data, _ = await self._transport.request("GET", f"{_PREFIX}/{project_id}")
         return ProjectDetail(**data)
+
+    async def get_published_bundle(self, project_slug: str) -> PublishedPromptBundle:
+        data, _ = await self._transport.request(
+            "GET",
+            f"{_PREFIX}/by-slug/{project_slug}/prompts/published",
+        )
+        return PublishedPromptBundle(**data)
 
     async def list_prompts(
         self,

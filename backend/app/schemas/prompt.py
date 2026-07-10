@@ -109,3 +109,23 @@ class RenderResponse(BaseModel):
     version: str
     rendered_content: str
     variables_used: dict[str, Any]
+
+
+class PublishedPromptResponse(BaseModel):
+    id: uuid.UUID
+    slug: str
+    name: str
+    version: str
+    status: str
+    content: str
+    variables: Any
+    format: str
+    template_engine: str
+    published_at: datetime
+
+
+class PublishedPromptBundleResponse(BaseModel):
+    project_id: uuid.UUID
+    project_slug: str
+    revision: str
+    prompts: list[PublishedPromptResponse]

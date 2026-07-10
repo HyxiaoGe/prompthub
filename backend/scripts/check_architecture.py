@@ -49,9 +49,8 @@ def get_imports(tree: ast.AST) -> list[tuple[int, str]]:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.append((node.lineno, alias.name))
-        elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                imports.append((node.lineno, node.module))
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imports.append((node.lineno, node.module))
     return imports
 
 
@@ -59,13 +58,15 @@ def check_db_operations_in_api(tree: ast.AST, filepath: Path) -> list[str]:
     """检查 API 层是否直接调用数据库操作（db.query() 等）"""
     violations = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Attribute) and node.func.attr in DB_DIRECT_OPS:
-                if isinstance(node.func.value, ast.Name) and node.func.value.id == "db":
-                    rel = filepath.relative_to(PROJECT_ROOT)
-                    violations.append(
-                        f"  {rel}:{node.lineno} — API 层直接调用 db.{node.func.attr}()，应通过 Service 操作"
-                    )
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr in DB_DIRECT_OPS
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "db"
+        ):
+            rel = filepath.relative_to(PROJECT_ROOT)
+            violations.append(f"  {rel}:{node.lineno} — API 层直接调用 db.{node.func.attr}()，应通过 Service 操作")
     return violations
 
 

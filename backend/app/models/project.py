@@ -13,6 +13,7 @@ from app.database import Base
 if TYPE_CHECKING:
     from app.models.prompt import Prompt
     from app.models.scene import Scene
+    from app.models.service_token import ServiceToken
     from app.models.user import User
 
 
@@ -49,6 +50,10 @@ class Project(Base):
         cascade="all, delete-orphan",
     )
     scenes: Mapped[list[Scene]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    service_tokens: Mapped[list[ServiceToken]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
     )

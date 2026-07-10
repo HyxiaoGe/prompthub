@@ -2,6 +2,10 @@ import uuid
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.prompt import Prompt
 
 API = "/api/v1"
 
@@ -80,6 +84,27 @@ async def test_publish_with_content_override(client: AsyncClient, prompt_id: str
     assert data["content"] == "overridden content"
 
 
+async def test_publish_with_content_and_variables_syncs_prompt_snapshot(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    prompt_id: str,
+) -> None:
+    variables = [{"name": "topic", "type": "string", "required": True}]
+    resp = await client.post(
+        f"{API}/prompts/{prompt_id}/publish",
+        json={
+            "bump": "patch",
+            "content": "new {{ topic }}",
+            "variables": variables,
+        },
+    )
+
+    assert resp.status_code == 200
+    prompt = (await db_session.execute(select(Prompt).where(Prompt.id == uuid.UUID(prompt_id)))).scalar_one()
+    assert prompt.content == "new {{ topic }}"
+    assert prompt.variables == variables
+
+
 async def test_publish_nonexistent_prompt(client: AsyncClient) -> None:
     resp = await client.post(
         f"{API}/prompts/{uuid.uuid4()}/publish",
@@ -106,6 +131,8 @@ async def test_list_versions_initial(client: AsyncClient, prompt_id: str) -> Non
     data = resp.json()["data"]
     assert len(data) == 1
     assert data[0]["version"] == "1.0.0"
+    assert data[0]["format"] == "text"
+    assert data[0]["template_engine"] == "jinja2"
 
 
 async def test_list_versions_after_publish(client: AsyncClient, prompt_id: str) -> None:

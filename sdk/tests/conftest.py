@@ -61,10 +61,32 @@ VERSION_DATA = {
     "version": "1.0.0",
     "content": "Hello {{ name }}",
     "variables": [],
+    "format": "text",
+    "template_engine": "jinja2",
     "changelog": "Initial version",
     "status": "published",
     "created_by": USER_ID,
     "created_at": NOW,
+}
+
+PUBLISHED_BUNDLE_DATA = {
+    "project_id": PROJECT_ID,
+    "project_slug": "test-project",
+    "revision": "a" * 64,
+    "prompts": [
+        {
+            "id": PROMPT_ID,
+            "slug": "test-prompt",
+            "name": "Test Prompt",
+            "version": "1.0.0",
+            "status": "published",
+            "content": "Hello {{ name }}",
+            "variables": [{"name": "name", "type": "string", "required": True}],
+            "format": "text",
+            "template_engine": "jinja2",
+            "published_at": NOW,
+        }
+    ],
 }
 
 PROJECT_DATA = {

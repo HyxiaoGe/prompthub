@@ -5,40 +5,215 @@ on:
     branches: ["master"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: prompthub-dev-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
-    runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: 架构检查
-        run: python3 scripts/check_architecture.py
-
-      - name: Lint 检查
-        run: ~/.local/bin/ruff check .
-
-  deploy:
-    needs: check
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, X64]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: prompthub
+          POSTGRES_PASSWORD: prompthub_ci
+          POSTGRES_DB: prompthub_ci
+        ports:
+          - "5432/tcp"
+        options: >-
+          --health-cmd "pg_isready -U prompthub -d prompthub_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Record start time
-        run: echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Deploy
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            backend/uv.lock
+            sdk/uv.lock
+
+      - name: Configure test database
+        run: |
+          port="${{ job.services.postgres.ports[5432] }}"
+          echo "DATABASE_URL=postgresql+asyncpg://prompthub:prompthub_ci@127.0.0.1:${port}/prompthub_ci" >> "$GITHUB_ENV"
+          echo "DATABASE_URL_SYNC=postgresql://prompthub:prompthub_ci@127.0.0.1:${port}/prompthub_ci" >> "$GITHUB_ENV"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --frozen --group dev
+
+      - name: Install SDK dependencies
+        working-directory: sdk
+        run: uv sync --frozen --extra dev
+
+      - name: Apply test database migrations
+        working-directory: backend
+        run: uv run --frozen alembic upgrade head
+
+      - name: Backend tests
+        working-directory: backend
+        run: uv run --frozen pytest
+
+      - name: SDK tests
+        working-directory: sdk
+        run: uv run --frozen --extra dev pytest
+
+      - name: Backend lint
+        working-directory: backend
+        run: uv run --frozen ruff check .
+
+      - name: SDK lint
+        working-directory: sdk
+        run: uv run --frozen --extra dev ruff check .
+
+      - name: Architecture check
+        working-directory: backend
+        run: uv run --frozen python scripts/check_architecture.py
+
+  deploy:
+    needs: check
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout smoke source
+        uses: actions/checkout@v4
+
+      - name: Record start time
+        run: echo "BUILD_START=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Fast-forward deploy checkout
         run: |
           cd ~/project/prompthub
-          git pull
-          if git diff HEAD~1 --name-only | grep -qE 'pyproject\.toml|uv\.lock|Dockerfile|docker-compose'; then
-            docker compose up -d --build
-          else
-            docker compose restart
+          set -euo pipefail
+
+          previous_sha="$(git rev-parse HEAD)"
+          compose_diff_before="$(git diff --binary -- docker-compose.yml | sha256sum | awk '{print $1}')"
+          git fetch --prune origin master
+          git cat-file -e "${GITHUB_SHA}^{commit}"
+
+          if ! git merge-base --is-ancestor "$previous_sha" "$GITHUB_SHA"; then
+            echo "dev checkout 不能 fast-forward 到触发提交: current=$previous_sha target=$GITHUB_SHA"
+            exit 1
           fi
+          git merge --ff-only "$GITHUB_SHA"
+
+          checkout_sha="$(git rev-parse HEAD)"
+          test "$checkout_sha" = "$GITHUB_SHA"
+          compose_diff_after="$(git diff --binary -- docker-compose.yml | sha256sum | awk '{print $1}')"
+          test "$compose_diff_before" = "$compose_diff_after"
+
+          if [ -n "$(git status --porcelain --untracked-files=all -- backend sdk)" ]; then
+            echo "backend 或 SDK 工作区不是触发提交的纯净内容，拒绝部署"
+            git status --short -- backend sdk
+            exit 1
+          fi
+
+          echo "PREVIOUS_SHA=$previous_sha" >> "$GITHUB_ENV"
+          echo "PROMPTHUB_CHECKOUT_SHA=$checkout_sha" >> "$GITHUB_ENV"
+
+      - name: Apply migrations and restart backend
+        run: |
+          cd ~/project/prompthub
+          set -euo pipefail
+
+          changed_files="$(git diff --name-only "$PREVIOUS_SHA" "$GITHUB_SHA")"
+          if printf '%s\n' "$changed_files" | grep -qE '^backend/(Dockerfile|pyproject\.toml|uv\.lock)$'; then
+            docker compose build backend
+          fi
+
+          docker compose run --rm --no-deps backend uv run --no-sync alembic upgrade head
+          docker compose up -d --no-deps --force-recreate backend
+
+          docker network inspect fusion-prompthub >/dev/null 2>&1 \
+            || docker network create fusion-prompthub >/dev/null
+          if ! docker inspect prompthub-backend \
+            --format '{{json .NetworkSettings.Networks}}' | grep -q '"fusion-prompthub"'; then
+            docker network connect fusion-prompthub prompthub-backend
+          fi
+
+      - name: Verify health, network, and deployed code
+        run: |
+          cd ~/project/prompthub
+          set -euo pipefail
+
+          healthy=0
+          for attempt in $(seq 1 30); do
+            if docker exec -i prompthub-backend python - >/dev/null 2>&1 <<'PY'
+          import json
+          import urllib.request
+
+          with urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=5) as response:
+              body = json.load(response)
+          if response.status != 200 or body.get("code") != 0:
+              raise SystemExit("PromptHub container health smoke failed")
+          if body.get("data", {}).get("status") != "healthy":
+              raise SystemExit("PromptHub container is not healthy")
+          PY
+            then
+              healthy=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$healthy" != "1" ]; then
+            docker logs --tail=120 prompthub-backend || true
+            exit 1
+          fi
+
+          docker inspect prompthub-backend \
+            --format '{{json .NetworkSettings.Networks}}' | grep -q '"fusion-prompthub"'
+          echo "PromptHub internal health smoke passed"
+
+          manifest="$(mktemp)"
+          git ls-files backend | sed 's#^backend/##' > "$manifest"
+          expected_code_sha="$(python3 - "$manifest" <<'PY'
+          import hashlib
+          import pathlib
+          import sys
+
+          digest = hashlib.sha256()
+          for raw in pathlib.Path(sys.argv[1]).read_text().splitlines():
+              digest.update(raw.encode())
+              digest.update(b"\0")
+              digest.update((pathlib.Path("backend") / raw).read_bytes())
+          print(digest.hexdigest())
+          PY
+          )"
+          container_code_sha="$(docker exec -i prompthub-backend python -c '
+          import hashlib
+          import pathlib
+          import sys
+
+          digest = hashlib.sha256()
+          for raw in sys.stdin.read().splitlines():
+              digest.update(raw.encode())
+              digest.update(b"\0")
+              digest.update((pathlib.Path("/app") / raw).read_bytes())
+          print(digest.hexdigest())
+          ' < "$manifest")"
+          rm -f "$manifest"
+
+          test "$PROMPTHUB_CHECKOUT_SHA" = "$GITHUB_SHA"
+          test "$container_code_sha" = "$expected_code_sha"
+          echo "PromptHub deploy verified: checkout_sha=$PROMPTHUB_CHECKOUT_SHA code_sha=$container_code_sha"
+
+      - name: Cleanup Docker artifacts
+        if: always()
+        run: |
           docker image prune -f
           docker builder prune --filter "until=72h" -f
 

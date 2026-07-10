@@ -22,6 +22,8 @@ class VersionResponse(BaseModel):
     version: str
     content: str
     variables: Any
+    format: str
+    template_engine: str
     changelog: str | None
     status: VersionStatus
     created_by: uuid.UUID | None

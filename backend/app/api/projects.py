@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import get_current_user
+from app.core.auth import BundlePrincipal, get_bundle_principal, get_current_user
 from app.core.pagination import PaginationParams, get_pagination
 from app.core.response import pagination_meta, success_response
 from app.database import get_db
@@ -17,6 +17,16 @@ from app.schemas.prompt import PromptSummaryResponse
 from app.services import project_service
 
 router = APIRouter()
+
+
+@router.get("/by-slug/{project_slug}/prompts/published")
+async def get_published_prompt_bundle(
+    project_slug: str,
+    _principal: BundlePrincipal = Depends(get_bundle_principal),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    bundle = await project_service.get_published_prompt_bundle(db, project_slug)
+    return success_response(data=bundle.model_dump(mode="json"))
 
 
 @router.post("")

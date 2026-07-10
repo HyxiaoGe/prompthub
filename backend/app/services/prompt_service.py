@@ -69,6 +69,8 @@ async def create_prompt(
         version="1.0.0",
         content=data.content,
         variables=variables_data,
+        format=data.format,
+        template_engine=data.template_engine,
         changelog="Initial version",
         status=VersionStatus.PUBLISHED,
         created_by=created_by,
@@ -166,3 +168,11 @@ async def delete_prompt(db: AsyncSession, prompt_id: uuid.UUID) -> None:
     prompt = await get_prompt(db, prompt_id)
     prompt.deleted_at = func.now()  # type: ignore[assignment]
     await db.flush()
+
+
+async def share_prompt(db: AsyncSession, prompt_id: uuid.UUID) -> Prompt:
+    prompt = await get_prompt(db, prompt_id)
+    prompt.is_shared = True
+    await db.flush()
+    await db.refresh(prompt)
+    return prompt

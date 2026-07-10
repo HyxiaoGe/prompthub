@@ -42,6 +42,8 @@ async def publish_version(
         version=new_version_str,
         content=content,
         variables=variables,
+        format=prompt.format,
+        template_engine=prompt.template_engine,
         changelog=data.changelog,
         status=VersionStatus.PUBLISHED,
         created_by=created_by,
@@ -49,6 +51,8 @@ async def publish_version(
     db.add(version)
 
     prompt.current_version = new_version_str
+    prompt.content = content
+    prompt.variables = variables
     await db.flush()
 
     return version

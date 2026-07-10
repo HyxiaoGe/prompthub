@@ -6,12 +6,20 @@ from uuid import UUID
 
 import pytest
 
-from prompthub import AsyncPromptHubClient, Project, ProjectDetail, PromptHubClient, PromptSummary
+from prompthub import (
+    AsyncPromptHubClient,
+    Project,
+    ProjectDetail,
+    PromptHubClient,
+    PromptSummary,
+    PublishedPromptBundle,
+)
 from tests.conftest import (
     PROJECT_DATA,
     PROJECT_DETAIL_DATA,
     PROJECT_ID,
     PROMPT_SUMMARY_DATA,
+    PUBLISHED_BUNDLE_DATA,
     _RouteRegistry,
     envelope,
     list_envelope,
@@ -23,6 +31,24 @@ from tests.conftest import (
 
 
 class TestProjectsSync:
+    def test_get_published_bundle(
+        self,
+        routes: _RouteRegistry,
+        sync_client: PromptHubClient,
+    ) -> None:
+        routes.add(
+            "GET",
+            "/api/v1/projects/by-slug/test-project/prompts/published",
+            envelope(PUBLISHED_BUNDLE_DATA),
+        )
+
+        bundle = sync_client.projects.get_published_bundle("test-project")
+
+        assert isinstance(bundle, PublishedPromptBundle)
+        assert bundle.revision == "a" * 64
+        assert bundle.prompts[0].slug == "test-prompt"
+        assert bundle.prompts[0].content == "Hello {{ name }}"
+
     def test_create(
         self,
         routes: _RouteRegistry,
@@ -81,6 +107,23 @@ class TestProjectsSync:
 
 
 class TestProjectsAsync:
+    @pytest.mark.asyncio
+    async def test_get_published_bundle(
+        self,
+        routes: _RouteRegistry,
+        async_client: AsyncPromptHubClient,
+    ) -> None:
+        routes.add(
+            "GET",
+            "/api/v1/projects/by-slug/test-project/prompts/published",
+            envelope(PUBLISHED_BUNDLE_DATA),
+        )
+
+        bundle = await async_client.projects.get_published_bundle("test-project")
+
+        assert isinstance(bundle, PublishedPromptBundle)
+        assert bundle.prompts[0].version == "1.0.0"
+
     @pytest.mark.asyncio
     async def test_create(
         self,

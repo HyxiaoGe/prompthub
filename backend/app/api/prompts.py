@@ -117,8 +117,5 @@ async def share_prompt(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    prompt = await prompt_service.get_prompt(db, prompt_id)
-    prompt.is_shared = True
-    await db.flush()
-    await db.refresh(prompt)
+    prompt = await prompt_service.share_prompt(db, prompt_id)
     return success_response(data=PromptResponse.model_validate(prompt).model_dump(mode="json"))

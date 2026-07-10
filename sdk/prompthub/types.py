@@ -65,6 +65,8 @@ class Version(BaseModel):
     version: str
     content: str
     variables: Any = None
+    format: str
+    template_engine: str
     changelog: str | None = None
     status: str
     created_by: UUID | None = None
@@ -89,6 +91,26 @@ class Project(BaseModel):
 class ProjectDetail(Project):
     prompt_count: int = 0
     scene_count: int = 0
+
+
+class PublishedPrompt(BaseModel):
+    id: UUID
+    slug: str
+    name: str
+    version: str
+    status: str
+    content: str
+    variables: Any = None
+    format: str
+    template_engine: str
+    published_at: datetime
+
+
+class PublishedPromptBundle(BaseModel):
+    project_id: UUID
+    project_slug: str
+    revision: str
+    prompts: list[PublishedPrompt]
 
 
 # ---------------------------------------------------------------------------

@@ -130,7 +130,10 @@ jobs:
             docker compose build backend
           fi
 
-          docker compose run --rm --no-deps backend uv run --no-sync alembic upgrade head
+          # dev compose 将宿主 backend bind mount 到 /app，会遮住镜像内的 .venv。
+          # 先按锁文件同步宿主虚拟环境，再运行迁移，保证后续重建容器也能直接启动。
+          docker compose run --rm --no-deps backend \
+            sh -lc 'uv sync --frozen --no-dev && uv run --no-sync alembic upgrade head'
           docker compose up -d --no-deps --force-recreate backend
 
           docker network inspect fusion-prompthub >/dev/null 2>&1 \
